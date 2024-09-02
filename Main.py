@@ -3,8 +3,8 @@ from pyspark.sql.functions import col
 
 if __name__ == "__main__":
     spark = init_spark()
-    file_path = '/Users/mickael/Documents/Cours/EPSI/Datavisualisation/Devoir OpenFoodFacts/en.openfoodfacts.org.products.csv'
-
+    file_path= "input/"
+    fichier = file_path + "data_openfood.csv"
     df = read_data(spark, file_path)
     df_cleaned = clean_data(df)
 
