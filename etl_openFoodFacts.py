@@ -3,10 +3,15 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, isnan, rand
 import random
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType
+import psycopg2
 
 
 def init_spark():
-    return SparkSession.builder.appName("DataWithoutImages").getOrCreate()
+    file_path = "input/"
+    return SparkSession.builder \
+        .appName("DataWithoutImages") \
+        .config("spark.jars", file_path + "postgresql-42.7.4.jar") \
+        .getOrCreate()
 
 
 def read_data(spark, file_path):
@@ -116,3 +121,13 @@ def generate_menu(user_data, clean_data, regimes):
 
     menu = filtered_data.orderBy("random").limit(21)
     return menu
+
+
+def write_to_postgres(df, table_name, mode="overwrite"):
+    url = "jdbc:postgresql://localhost:5432/openfoodfacts"
+    properties = {
+        "user": "",
+        "password": "",
+        "driver": "org.postgresql.Driver"
+    }
+    df.write.jdbc(url=url, table=table_name, mode=mode, properties=properties)
