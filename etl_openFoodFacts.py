@@ -1,10 +1,7 @@
-import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, isnan, rand
-import random
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType
-import psycopg2
-
+import random
 
 def init_spark():
     file_path = "input/"
@@ -13,30 +10,24 @@ def init_spark():
         .config("spark.jars", file_path + "postgresql-42.7.4.jar") \
         .getOrCreate()
 
-
 def read_data(spark, file_path):
-    df = spark.read.csv(file_path, sep='\t', header=True)
-    return df.limit(100000)
-
+    return spark.read.csv(file_path, sep='\t', header=True)
 
 def clean_data(df):
-    colonnes_inutiles = ['code', 'created', 'last', 'url', 'image', 'creator', 'categories', 'abbreviated_product_name',
-                         'generic_name', 'packaging', 'brands', 'tags', 'origins', 'cities', 'countries', 'allergens',
-                         'traces', 'additives', 'states', 'brand_owner', 'owner', 'main_category', 'food_groups',
-                         'unique_scans_n', 'labels', '_t', '_datetime ', 'purchase_places', 'stores']
+    colonnes_inutiles = [
+        'code', 'created', 'last', 'url', 'image', 'creator', 'categories', 'abbreviated_product_name',
+        'generic_name', 'packaging', 'brands', 'tags', 'origins', 'cities', 'countries', 'allergens',
+        'traces', 'additives', 'states', 'brand_owner', 'owner', 'main_category', 'food_groups',
+        'unique_scans_n', 'labels', '_t', '_datetime ', 'purchase_places', 'stores'
+    ]
 
-    def filtrer(nom_colonne):
-        for mot in colonnes_inutiles:
-            if mot in nom_colonne:
-                return True
-        return False
+    colonnes_critiques = [
+        "energy_100g", "fat_100g", "saturated-fat_100g", "carbohydrates_100g", "sugars_100g",
+        "fiber_100g", "proteins_100g", "salt_100g", "sodium_100g"
+    ]
 
-    columns_to_drop = [col for col in df.columns if filtrer(col)]
-    df_cleaned = df.drop(*columns_to_drop)
+    df_cleaned = df.drop(*[col for col in df.columns if any(mot in col for mot in colonnes_inutiles)])
     df_cleaned = df_cleaned.filter(col("product_name").isNotNull())
-
-    colonnes_critiques = ["energy_100g", "fat_100g", "saturated-fat_100g", "carbohydrates_100g", "sugars_100g",
-                          "fiber_100g", "proteins_100g", "salt_100g", "sodium_100g"]
 
     for col_name in colonnes_critiques:
         df_cleaned = df_cleaned.filter((col(col_name).isNotNull()) & (~isnan(col(col_name))))
@@ -54,7 +45,6 @@ def clean_data(df):
     )
 
     return df_cleaned
-
 
 def create_dataframes(spark):
     schema_regimes = StructType([
@@ -104,7 +94,6 @@ def create_dataframes(spark):
 
     return df_regimes, df_users
 
-
 def generate_menu(user_data, clean_data, regimes):
     user_regime = regimes.filter(col("Regime_ID") == user_data["Regime_ID"]).collect()[0]
 
@@ -116,12 +105,8 @@ def generate_menu(user_data, clean_data, regimes):
         (col("sodium_100g") <= user_regime["Sodium_max"])
     )
 
-    seed = random.randint(0, 100000)
-    filtered_data = filtered_data.withColumn("random", rand(seed))
-
-    menu = filtered_data.orderBy("random").limit(21)
+    menu = filtered_data.orderBy(rand(random.randint(0, 100000))).limit(21)
     return menu
-
 
 def write_to_postgres(df, table_name, mode="overwrite"):
     url = "jdbc:postgresql://localhost:5432/openfoodfacts"
