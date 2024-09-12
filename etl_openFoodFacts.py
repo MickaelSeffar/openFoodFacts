@@ -4,7 +4,7 @@ from pyspark.sql.types import StructType, StructField, IntegerType, StringType
 import random
 
 def init_spark():
-    file_path = "input/"
+    file_path = "lib/"
     return SparkSession.builder \
         .appName("DataWithoutImages") \
         .config("spark.jars", file_path + "postgresql-42.7.4.jar") \
@@ -70,29 +70,7 @@ def create_dataframes(spark):
 
     df_regimes = spark.createDataFrame(data_regimes, schema_regimes)
 
-    schema_users = StructType([
-        StructField("User_ID", IntegerType(), True),
-        StructField("Nom", StringType(), True),
-        StructField("Age", IntegerType(), True),
-        StructField("Sexe", StringType(), True),
-        StructField("Regime_ID", IntegerType(), True),
-        StructField("Email", StringType(), True)
-    ])
-
-    data_users = [
-        (1, "Alice", 30, "F", 1, "alice@example.com"),
-        (2, "Bob", 45, "M", 2, "bob@example.com"),
-        (3, "Charlie", 29, "M", 3, "charlie@example.com"),
-        (4, "Diana", 34, "F", 4, "diana@example.com"),
-        (5, "Eve", 40, "F", 5, "eve@example.com"),
-        (6, "Frank", 50, "M", 6, "frank@example.com"),
-        (7, "Grace", 27, "F", 7, "grace@example.com"),
-        (8, "Henry", 38, "M", 8, "henry@example.com")
-    ]
-
-    df_users = spark.createDataFrame(data_users, schema_users)
-
-    return df_regimes, df_users
+    return df_regimes
 
 def generate_menu(user_data, clean_data, regimes):
     user_regime = regimes.filter(col("Regime_ID") == user_data["Regime_ID"]).collect()[0]
